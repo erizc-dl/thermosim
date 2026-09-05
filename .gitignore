@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.vscode
+.DS_Store
+.pytest_cache/
+*.log
+temperature_log.csv
+.env
