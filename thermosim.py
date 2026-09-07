@@ -1,58 +1,140 @@
 """Thermosim - Thermostat Simulation Program"""
 
-# unit - celcius
-indoor_temp = 30
-outdoor_temp = 40
+import random
 
-cool_rate = -0.2
-heat_rate = 0.2
-drift_rate = 0.05
+# All Temperature in degrees Celsius
 
-target_temp = 25
+class Room:
+    """Temperature and drift rate."""
 
-sim_time = 1440 # set sim time (min)
+    def __init__(self, indoor_temp, outdoor_temp, drift_rate):
+        self.indoor_temp = indoor_temp
+        self.outdoor_temp = outdoor_temp
+        self.drift_rate = drift_rate
 
-min = 0
+    def drift(self):
+        """Temperature gain/loss due to outdoor temperature."""
+        if self.indoor_temp > self.outdoor_temp:
+            self.indoor_temp = round(self.indoor_temp - self.drift_rate, 2)
+
+        elif self.indoor_temp < self.outdoor_temp:
+            self.indoor_temp = round(self.indoor_temp + self.drift_rate, 2)
+
+        else:
+            drift = random.choice(True, False)
+
+            if drift:
+                self.indoor_temp += self.drift_rate
+            else:
+                self.indoor_temp -= self.drift_rate
+
+class Thermostat:
+    """Thermostat – decides whether the Heater or AC gets turned on."""
+
+    def __init__(self, target, heating_threshold, cooling_threshold):
+        self.target = target
+        self.heating_threshold = heating_threshold
+        self.cooling_threshold = cooling_threshold
+
+    def decide(self):
+        """Start – decided by heating / cooling threshold: 
+           Stop – decided by equal or surpass target:"""
+
+        if heater.is_on:
+            # If reach target, turn off.
+            if room.indoor_temp == self.target or room.indoor_temp > self.target:
+                heater.is_on = False
+
+                heater.turn_off()
+                print("Heater OFF")
+
+            # If not, keep heating.
+            else:
+                heater.heat()
+
+        elif airConditioner.is_on:
+            # If reach target, turn off.
+            if room.indoor_temp == self.target or room.indoor_temp < self.target:
+                airConditioner.is_on = False
+
+                airConditioner.turn_off()
+                print("AC OFF")
+
+            # If not, keep cooling.
+            else:
+                airConditioner.cool()
+
+        else:
+            # Start heating if temp below threshold
+            if room.indoor_temp < self.heating_threshold:
+                self.use_heater()
+
+            # Start cooling if temp above threshold
+            elif room.indoor_temp > self.cooling_threshold:
+                self.use_AC()
+
+    def use_heater(self):
+        print("Heater ON")
+        heater.turn_on()
+        heater.heat() # heat once
+
+    def use_AC(self):
+        print("AC ON")
+        airConditioner.turn_on()
+        airConditioner.cool() # cool once
+
+class Heater:
+    """Control heater action. Heats when turned on."""
+
+    def __init__(self):
+        self.heat_rate = 0.2
+        self.is_on = False
+
+    def turn_on(self):
+        self.is_on = True
+
+    def turn_off(self):
+        self.is_on = False
+
+    def heat(self):
+        if self.is_on:
+            room.indoor_temp = round(self.heat_rate + room.indoor_temp, 2)
+
+class AirConditioner:
+    """Control AC action. Cools when turned on."""
+
+    def __init__(self):
+        self.cool_rate = -0.2
+        self.is_on = False
+
+    def turn_on(self):
+        self.is_on = True
+
+    def turn_off(self):
+        self.is_on = False
+
+    def cool(self):
+        if self.is_on:
+            room.indoor_temp = round(self.cool_rate + room.indoor_temp, 2)
+
+room = Room(40, 30, 0.05)
+heater = Heater()
+airConditioner = AirConditioner()
+thermostat = Thermostat(25, 24, 26)
+
+minute = 0
 hour = 0
 
-def airConditioner(temp):
-    temp += cool_rate
-    return temp
-
-def heater(temp):
-    temp += heat_rate
-    return temp
-
-def drift(temp):
-    if temp > outdoor_temp:
-        temp -= drift_rate
-        return temp
-    elif temp < outdoor_temp:
-        temp += drift_rate
-        return temp
-    else:
-        return temp # no drift
-
-def thermostat(temp, target):
-    if temp > target:
-        return airConditioner(temp)
-    elif temp < target:
-        return heater(temp)
-    else:
-        return temp
-
-for i in range(sim_time):
-    print(f"{hour}:{min} - {indoor_temp} °C")
-
-    if thermostat(indoor_temp, target_temp) == indoor_temp:
-        print(f"{hour}:{min} - *thermostat off")
-
-    new_temp = thermostat(indoor_temp, target_temp)
-    new_temp = drift(new_temp)
-    indoor_temp = round(new_temp, 2)
-
-    min += 1
-
-    if min == 60:
+for i in range(120):
+    """Main loop for HVAC control."""
+    
+    thermostat.decide()
+    room.drift()
+    
+    print(f"{hour}:{minute} {room.indoor_temp}°C")
+    
+    minute += 1
+    
+    if minute == 60:
         hour += 1
-        min = 0
+        minute = 0
